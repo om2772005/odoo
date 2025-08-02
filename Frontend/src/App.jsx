@@ -5,7 +5,7 @@ import UserRegisterPage from "./Pages/Register";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UserDashboard from "./Pages/Userdashboard";
-import AgentLoginPage from "./Pages/agentlogin";
+import AgentLoginPage from "./Pages/Agentlogin";
 
 import AgentDashboard from "./Pages/Agentdashboard";
 import AdminLogin from "./Pages/Adminlogin";
@@ -18,10 +18,11 @@ const App = ()=>{
       <Route path='/user' element = {<UserLoginPage/>}/> 
       <Route path='/userregister' element={<UserRegisterPage/>}/>
       <Route path='userdashboard' element={<UserDashboard/>}/>
-      <Route path='/agentlogin' element={<AgentLoginPage/>}/>
+       <Route path='/agentlogin' element={<AgentLoginPage />}/>
       <Route path='/agentdashboard' element={<AgentDashboard/>}/>
       <Route path='/adminlogin' element={<AdminLogin/>}/>
-      <Route path='admindashboard' element={<AdminDashboard/>}/>
+      <Route path='/admindashboard' element={<AdminDashboard/>}/>
+     
     
 
     </Routes>
