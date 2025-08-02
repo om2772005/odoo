@@ -5,7 +5,13 @@ const UserDashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [categories, setCategories] = useState([]);
-const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
+// In your ticket submission form component
+useEffect(() => {
+  axios.get("http://localhost:3000/categories").then(res => {
+    setCategories(res.data);
+  });
+}, []);
+
 
   const [showForm, setShowForm] = useState(false);
   const [newTicket, setNewTicket] = useState({
@@ -180,12 +186,12 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
   }
   className="w-full px-4 py-2 bg-black border border-cyan-400 rounded-lg"
 >
-  <option value="">Select Category</option>
-  {dummyCategories.map((cat, index) => (
-    <option key={index} value={cat}>
-      {cat}
-    </option>
+  <select>
+  {categories.map(cat => (
+    <option key={cat._id} value={cat.name}>{cat.name}</option>
   ))}
+</select>
+
 </select>
 
         <input

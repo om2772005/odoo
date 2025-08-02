@@ -29,7 +29,7 @@ const SelectLogin = () => {
           </div>
         </Link>
 
-        <Link to="/login/admin" className="w-full">
+        <Link to="/adminlogin" className="w-full">
           <div className="bg-[#111111] border border-red-500 rounded-2xl p-8 text-center shadow-[0_0_25px_rgba(255,0,0,0.2)] hover:scale-105 transition-transform duration-300">
             <h2 className="text-xl font-bold mb-4 text-red-300">🧠 Admin Login</h2>
             <p className="text-gray-400 text-sm mb-6">Manage categories, users, and monitor ticket flow.</p>

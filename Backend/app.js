@@ -6,8 +6,10 @@ const User  = require('./models/User')
 const Ticket = require('./models/Ticket');
 const cookieParser = require('cookie-parser');
 const Agent = require('./models/Agent')
+const Admin = require('./models/Admin')
+const Category = require('./models/Category')
 
-
+const verifyAgentToken = require('./middleware/verifyagent');
 
 dotenv.config();
 connectDB();
@@ -190,22 +192,121 @@ app.post("/agentlogin", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-// POST /createsampleagent
-app.post("/createsampleagent", async (req, res) => {
-  try {
-    const agent = new Agent({
-      name: "Test Agent",
-      email: "agent@example.com",
-      password: "123456", // No hashing, just raw
-    });
 
-    await agent.save();
-    res.status(201).json({ message: "Sample agent created", agent });
+
+app.get("/agentdashboard", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, "sss"); // use your secret
+    const agent = await Agent.findById(decoded.id);
+    if (!agent) return res.status(404).json({ error: "Agent not found" });
+
+    const tickets = await Ticket.find().populate("user").sort({ createdAt: -1 });
+
+    res.json({ agent, tickets });
   } catch (err) {
-    console.error("Error creating agent:", err);
-    res.status(500).json({ error: "Agent creation failed" });
+    console.error("Dashboard error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/categories", async (req, res) => {
+  try {
+    const categories = await Category.find();
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch categories" });
+  }
+});
+
+app.post("/add-category", async (req, res) => {
+  try {
+    const { name } = req.body;
+    const exists = await Category.findOne({ name });
+    if (exists) return res.status(400).json({ message: "Category exists" });
+
+    const category = new Category({ name });
+    await category.save();
+    res.status(201).json({ message: "Category added" });
+  } catch (err) {
+    res.status(500).json({ message: "Error adding category" });
+  }
+});
+
+app.delete("/delete-category/:id", async (req, res) => {
+  try {
+    await Category.findByIdAndDelete(req.params.id);
+    res.json({ message: "Category deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting category" });
+  }
+});
+
+
+
+app.put("/ticket/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const ticket = await Ticket.findById(req.params.id);
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    ticket.status = status;
+    await ticket.save();
+
+    res.json({ message: "Status updated", ticket });
+  } catch (err) {
+    console.error("Update status error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+// POST /ticket/:id/comment
+app.post("/ticket/:id/comment", async (req, res) => {
+  try {
+    const { message } = req.body;
+    const ticket = await Ticket.findById(req.params.id);
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    ticket.comments.push(message);
+    await ticket.save();
+
+    res.json({ message: "Comment added", ticket });
+  } catch (err) {
+    console.error("Add comment error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+// routes/admin.js
+app.post("/adminlogin", async (req, res) => {
+  const { email, password } = req.body;
+  const admin = await Admin.findOne({ email });
+  if (!admin || admin.password !== password) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+  const token = jwt.sign({ adminId: admin._id }, "sss");
+  res.json({ token });
+});
+app.get("/create-admin", async (req, res) => {
+  try {
+    const existingAdmin = await Admin.findOne({ email: "admin@quickdesk.com" });
+    if (existingAdmin) {
+      return res.status(400).send("⚠️ Admin already exists.");
+    }
+
+    const admin = new Admin({
+      name: "Admin",
+      email: "admin@quickdesk.com",
+      password: "admin123", // plain text for testing only
+    });
+
+    await admin.save();
+    res.send("✅ Admin created successfully!");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("❌ Failed to create admin.");
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
