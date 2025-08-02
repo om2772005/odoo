@@ -5,9 +5,8 @@ const UserDashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [categories, setCategories] = useState([]);
-const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
-
   const [showForm, setShowForm] = useState(false);
+
   const [newTicket, setNewTicket] = useState({
     title: "",
     description: "",
@@ -21,8 +20,20 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
   const [sortBy, setSortBy] = useState("recent");
 
   useEffect(() => {
+    fetchCategories();
     fetchTickets();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get("http://localhost:3000/categories");
+      const cats = res.data.categories || res.data || [];
+      setCategories(cats); // ✅ categories always as array of { _id, name }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+      setCategories([]);
+    }
+  };
 
   const fetchTickets = async () => {
     try {
@@ -31,10 +42,6 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
       });
       setTickets(res.data.tickets);
       setFiltered(res.data.tickets);
-      const allCategories = [
-        ...new Set(res.data.tickets.map((t) => t.category)),
-      ];
-      setCategories(allCategories);
     } catch (err) {
       console.error("Failed to fetch tickets:", err);
     }
@@ -62,9 +69,7 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
     if (sortBy === "mostReplied") {
       filteredList.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
     } else {
-      filteredList.sort(
-        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-      );
+      filteredList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     }
 
     setFiltered(filteredList);
@@ -99,6 +104,7 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
     <div className="min-h-screen bg-black text-white px-4 py-8">
       <h1 className="text-4xl font-bold text-cyan-400 mb-6">🎫 User Dashboard</h1>
 
+      {/* Filter Inputs */}
       <div className="flex flex-wrap gap-4 mb-6">
         <input
           type="text"
@@ -122,9 +128,9 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
           onChange={(e) => setCategoryFilter(e.target.value)}
         >
           <option value="All">All Categories</option>
-          {categories.map((c, i) => (
-            <option key={i} value={c}>
-              {c}
+          {categories.map((cat) => (
+            <option key={cat._id} value={cat.name}>
+              {cat.name}
             </option>
           ))}
         </select>
@@ -144,75 +150,83 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
         </button>
       </div>
 
+      {/* Ticket Creation Form */}
       {showForm && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div className="bg-zinc-900 p-6 rounded-2xl border border-cyan-500 shadow-2xl w-full max-w-xl relative animate-fade-in">
-      <button
-        onClick={() => setShowForm(false)}
-        className="absolute top-3 right-4 text-red-400 text-xl hover:text-red-500"
-        title="Close"
-      >
-        &times;
-      </button>
-      <h2 className="text-2xl font-bold mb-4 text-cyan-300">🎫 Create New Ticket</h2>
-      <form onSubmit={handleTicketCreate} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Title"
-          required
-          value={newTicket.title}
-          onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
-          className="w-full px-4 py-2 bg-black border border-cyan-400 rounded-lg"
-        />
-        <textarea
-          placeholder="Description"
-          required
-          value={newTicket.description}
-          onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-          className="w-full px-4 py-2 bg-black border border-cyan-400 rounded-lg"
-          rows="4"
-        />
-        <select
-  required
-  value={newTicket.category}
-  onChange={(e) =>
-    setNewTicket({ ...newTicket, category: e.target.value })
-  }
-  className="w-full px-4 py-2 bg-black border border-cyan-400 rounded-lg"
->
-  <option value="">Select Category</option>
-  {dummyCategories.map((cat, index) => (
-    <option key={index} value={cat}>
-      {cat}
-    </option>
-  ))}
-</select>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-900 p-6 rounded-2xl border border-cyan-500 shadow-2xl w-full max-w-xl relative">
+            <button
+              onClick={() => setShowForm(false)}
+              className="absolute top-3 right-4 text-red-400 text-xl hover:text-red-500"
+              title="Close"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-cyan-300">🎫 Create New Ticket</h2>
+            <form onSubmit={handleTicketCreate} className="space-y-4">
+              <input
+                type="text"
+                placeholder="Title"
+                required
+                value={newTicket.title}
+                onChange={(e) =>
+                  setNewTicket({ ...newTicket, title: e.target.value })
+                }
+                className="w-full px-4 py-2 bg-black border border-cyan-400 rounded-lg"
+              />
+              <textarea
+                placeholder="Description"
+                required
+                value={newTicket.description}
+                onChange={(e) =>
+                  setNewTicket({ ...newTicket, description: e.target.value })
+                }
+                className="w-full px-4 py-2 bg-black border border-cyan-400 rounded-lg"
+                rows="4"
+              />
+              <select
+                required
+                value={newTicket.category}
+                onChange={(e) =>
+                  setNewTicket({ ...newTicket, category: e.target.value })
+                }
+                className="w-full px-4 py-2 bg-black border border-cyan-400 rounded-lg"
+              >
+                <option value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
 
-        <input
-          type="file"
-          onChange={(e) => setNewTicket({ ...newTicket, file: e.target.files[0] })}
-          className="w-full text-sm text-gray-300"
-        />
-        <div className="flex justify-end space-x-4 mt-4">
-          <button
-            type="button"
-            onClick={() => setShowForm(false)}
-            className="px-4 py-2 border border-red-400 text-red-400 rounded-lg hover:bg-red-400 hover:text-black"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-black font-semibold"
-          >
-            Submit
-          </button>
+              <input
+                type="file"
+                onChange={(e) =>
+                  setNewTicket({ ...newTicket, file: e.target.files[0] })
+                }
+                className="w-full text-sm text-gray-300"
+              />
+              <div className="flex justify-end space-x-4 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 border border-red-400 text-red-400 rounded-lg hover:bg-red-400 hover:text-black"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-black font-semibold"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
 
+      {/* Ticket List */}
       {filtered.length === 0 ? (
         <p className="text-gray-500">No matching tickets found.</p>
       ) : (
@@ -236,7 +250,9 @@ const dummyCategories = ["General", "Billing", "Technical", "Feedback"];
               </div>
               <p className="text-sm text-yellow-400">📁 {ticket.category}</p>
               <p className="text-gray-300 mt-2">{ticket.description}</p>
-              <p className="text-sm text-gray-400 mt-1">🕓 Updated: {new Date(ticket.updatedAt).toLocaleString()}</p>
+              <p className="text-sm text-gray-400 mt-1">
+                🕓 Updated: {new Date(ticket.updatedAt).toLocaleString()}
+              </p>
 
               {ticket.comments?.length > 0 && (
                 <div className="mt-3">

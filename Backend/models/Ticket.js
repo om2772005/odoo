@@ -17,7 +17,6 @@ const ticketSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["General", "Billing", "Technical", "Feedback"],
       default: "General",
     },
     attachment: {

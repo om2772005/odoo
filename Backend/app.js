@@ -199,7 +199,7 @@ app.get("/agentdashboard", async (req, res) => {
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const decoded = jwt.verify(token, "sss"); // use your secret
+    const decoded = jwt.verify(token, "sss");
     const agent = await Agent.findById(decoded.id);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
@@ -211,6 +211,24 @@ app.get("/agentdashboard", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/admindashboard", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, "sss");
+    const admin = await Admin.findById(decoded.adminId); // ✅ fixed this line
+
+    if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+    const tickets = await Ticket.find().populate("user").sort({ createdAt: -1 });
+    res.json({ admin, tickets });
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.get("/categories", async (req, res) => {
   try {
     const categories = await Category.find();
@@ -222,15 +240,16 @@ app.get("/categories", async (req, res) => {
 
 app.post("/add-category", async (req, res) => {
   try {
+    console.log("BODY ===>", req.body); // Check what's coming
     const { name } = req.body;
-    const exists = await Category.findOne({ name });
-    if (exists) return res.status(400).json({ message: "Category exists" });
+    if (!name) return res.status(400).json({ error: "Category name required" });
 
-    const category = new Category({ name });
-    await category.save();
-    res.status(201).json({ message: "Category added" });
+    const newCat = new Category({ name });
+    await newCat.save();
+    res.status(201).json(newCat);
   } catch (err) {
-    res.status(500).json({ message: "Error adding category" });
+    console.error("Error adding category:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
